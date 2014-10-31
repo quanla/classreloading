@@ -11,35 +11,35 @@ Analysis
 Ideas:
 ---
 
-- Very difficult technique, but don't strangle them away
+- Very difficult technique, but don't scare them away
 
 Structure:
 -----
 
 
-old structure:
 
-- Boasting about CL technique -> Get attention
+Content:
+=======
+
 
 Creating the amazing: Java class reloading
 ============
 
-Class reloading was a very rare topic that we can come by; you can always see a project that developers have to restart server with every class change; That is a fact about Java development and no one complain about it. They have worked like that since their first day with Java. But is Java class reloading that difficult to do, and would that topic be both challenging and exciting? In this article, I will try to address the problem, thus to help you create an amazing day with this Ever-Sacred topic.
+In Java, class reloading is a very rare topic to come by, you can always find projects that developers have to restart server with every class change and no one complain about it - that is a fact about Java development. We have worked like that since our first day with Java, but is Java class reloading that difficult to achieve, and could that problem be both challenging and exciting to solve? In this article, I will try to address the problem, thus to help you create an amazing day with this Ever-Sacred topic.
 
-But why class reloading is so difficult?
+Why Java class reloading is so difficult?
 ------------
 
-Nowadays you can see JRebel advertisement every where, it's a commercial solution for Java class reloading. In their ads, they say it would help boost up 17% of your performance. I disagree with that, the number would be at least 500%. It's true. Don't think of server restarts as normal wait time, it's an interruption to your flow of logic, and for myself, it creates a lot of distraction too - I find myself often change to newspaper tab or search for porn with each restarting cycle.
+Nowadays you can see **[JRebel](http://zeroturnaround.com/software/jrebel/)** advertisement every where, it's a commercial solution for Java class reloading. In their ads, they say it would help boost up 17% our performance. I totally disagree with that, the number would be at least 500% ! It's true. Don't underestimate server restarts as normal waste of time. It's an interruption to your flow of logic, and for myself, it creates a lot of distraction too - I find myself often change to newspaper tab or search for porn with each restarting cycle.
 
-I'm pretty sure every developer out there would love to reload classes on the fly. Every Project Manager would love that too, they surely understand how much it would help to boost up productivity and help deadlines. But why they don't buy JRebel licences? Because it's God-Damn expensive. 
+No doubt every developer out there would love to have instant reload, and every Project Manager would love to have that and meet their deadlines. But why they don't buy JRebel licences? Because it's God-Damn expensive. 
 
-Don't misjudge JRebel guys as greedy bastards, they are just honest people trying to get money for their hard work. Solutions like such is very difficult to implement, and I bet you can't find another company out there offer a cheaper solution
+Don't misjudge the JRebel guys as greedy bastards, instead, they are just honest people trying to get money for their hard work. Solutions like such is very difficult to implement, and I bet that you can't find another company out there offering a cheaper solution for this. Not even me.
 
-Then what I'm doing here for?
+Then what I'm trying doing here?
 ---------------
 
-I'm here to give you are a free solution to this problem. Believe it or not, class reloading is both difficult and easy. And if after you have read this post and still find it difficult, then I assure you that trying to solve this problem is both challenging and exciting. And a long the way, you will find yourself grow up - as a Java developer, and a software Architecture.
-
+I'm here to give you are a free solution to this problem. Believe it or not, class reloading is both difficult and easy. And if after you have read this post and still find it difficult, then I assure you that trying to solve this problem is both challenging and exciting. And a long the way, you will find yourself grown up - as a Java developer, and as a software Architecture.
 
 The first example: Reloading 1 class
 =============
@@ -48,6 +48,7 @@ Please have a look at this short file:
 *All the files in this article are publicly available at* *****
 
 ~~~java
+
 package qj.blog.classreloading;
 
 import static java.lang.System.*;
@@ -87,6 +88,7 @@ public class StaticInt {
 
 
 ~~~
+
 And here is the output:
 
 ~~~
@@ -113,7 +115,7 @@ Here is the explanation of the 2 class definitions living together:
 
 As you can see, the 2 classes are not only loaded separately, but also their static members are created separately for each of them.
 
-The default class loader "sun.misc.Launcher$AppClassLoader" is pretty fixed, you can assume that it will stay in the JVM forever - together with all the classes it has loaded (User class). But the Dynamic class loader on the other hand can go away (Garbage Collected, or GC-ed ), and we can create as many Dynamic Class loaders as we want, and reload User class as many times as we want to. It's easy.
+The default class loader `sun.misc.Launcher$AppClassLoader` is pretty fixed, you can assume that it will stay in the JVM forever - together with all the classes it has loaded (`User` class). But the Dynamic class loader on the other hand can go away (Garbage Collected, or GC-ed ), and we can create as many Dynamic Class loaders as we want, and reload `User` class as many times as we want to. It's easy.
 
 Example 2: Reloading continuously
 ================
@@ -173,11 +175,57 @@ Play Basketball
 
 ~~~
 
-Every time a new instance of DynamicClassLoader is created, and we ask it to load the User class, it will go to our "target/classes" folder and try to pick up the newest compiled class file and give to us. So we can reload class - on the fly.
+Every time a new instance of `DynamicClassLoader` is created, and we ask it to load the User class, it will go to our "`target/classes`" folder and try to pick up the newest compiled class file and give to us. So we can reload class - on the fly.
 
 << Image of many Classloaders created and GC-ed >>
 
 The reason I use this example is also to demonstrate the ability for this approach to reload the class structure - adding new method, removing old method - This has always been the limitation of JVM HotSwap and the main reason why JRebel is so expensive. Well, now we can do it by ourselves, and it's free, right?
+
+As we reached this point, many may feel bored. This is only basics of Java class reloading, and even they have known these many years ago, they still have to restart server or buy JRebel. Why? because it's very difficult to apply this technique to their real life project. I also cannot guarantee you that this article will help you do class reloading to your project, but I can promise you a good example of a complex web application, thus you can get many lessons about what difficulties you may have while attempting to use this technique.
+
+
+Example 3: Simple context reloading
+==============
+
+Okay, let's have a look at the next example. This time I will set up a simple context, with a service and a model and reload them all together every time we hit enter on the console:
+
+<< >>
+
+As you can see, the main method will have a hold of the context object, and **that is the only link**. If we break that link, the context object and the context class, and the service object ... will all be eligible for GC-ed... With a clean design like this, we know exactly what to be cut and created a new in order to totally dump all the old classes and objects.
+
+A little explanation about why normally classes are so persistent and not get Garbage Collected: it's because normally we load all our classes into the default classloader, and this classloader cache all the classes it has loaded, so as long as the classloader still connected to any alive thread, everything (all loaded classes) will be immune to the Garbage Collector.
+
+Example 4: Reloading context while persisting connection object
+============
+
+In the next example I will show you how to save yourself a little more performance by keeping the old good connection object. In actual project, there would be many other things you want to keep through reloading phases, and this contribute to the reason while this topic is so difficult
+
+Just like what we have in Example 3, this example will show you how to cleanly separate the resource need to be reloaded and the one we need to keep
+
+Example 5: The complex Web App with class reloading
+=====
+
+This is not the final solution for all the applications out there, the actual solution will vary from project to project, framework to framework. What I'm trying to show here is that it is achievable and with your knowledge of the system and the class reloading mechanism, you will be able to make it happen.
+
+
+
+
+Conclusion:
+===
+
+So the key factor to achieve this is to have a super clean design, and with such you can freely manipulate your classes and the whole JVM
+
+What if you can't have a super clean design
+--------
+
+Then try to make a super clean design first, because without that, you will never be able to achieve the target. Even if you are quite confident with your design already, but just a little bit confused at some point, then some classes may not be totally cleaned, they will still have link back to the application and thus generate ghost-like behaviors that no one will enjoy. But don't worry, this will only happen during development, and will not affect the customers.
+
+It is a fact, class reloading is very difficult, I'm not trying to scare you. But if you started to do it and at some point you find your classes be loaded on the fly, then you are almost there already. There will be very little thing left to do before you can achieve totally superb clean design for your system.
+
+Good luck my friends and hope you all can do it.
+
+
+
 
 
 
