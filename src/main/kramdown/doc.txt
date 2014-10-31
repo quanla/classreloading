@@ -1,0 +1,118 @@
+For most Java developers out there, class reloading is an unfamiliar term, their usual code change routine was to restart the server and wait for the changes to be picked up. That is a very inefficient way of working that many others don't share. Techniques like Java Hot Swap, JRebel, DCEVM or fakereload have been around for some time and made people life much less miserable. I don't use any of them, for a long time I have developed my own way to save me from the annoying server restarts. And this is the right time for me to share my way of class reloading.
+
+If you are a Java guy, then most likely you would say that JVM don't reload classes, and all the above mentioned techniques are more of a hack than an official JVM feature. Well, you are correct... about the hacks. I would say that JVM has always been supporting class reloading. It's just that you may not know about it or may be not good enough to make use of it.
+
+The technique I'm about to discuss below is a very difficult one, it does classreloading but would require a deep understanding of Java classloading mechanism and a clear project structure mind. But to many senses this is the (only) right way to do class reloading. This is not a hack.
+
+In this post, I would spend some time to talk about the basics of Java classloading, and how JVM allow multiple class definitions to live together (in harmony). If you already know about classloading, I still beg you to read it, because it is interesting and very few document on the internet talk about it. Then I will make an example web application that make use of this technique to reload all classes with every page refresh (amazed huh, Ruby guys?)
+
+Example 1: Reloading 1 class
+=============
+
+Please have a look at this:
+
+~~~java
+package qj.blog.classreloading;
+
+import qj.util.ReflectUtil;
+import qj.util.lang.CompositeClassPathLoader;
+
+/**
+ * Created by Quan on 26/10/2014.
+ */
+public class StaticInt {
+	public static void main(String[] args) throws NoSuchFieldException {
+		Class<?> userClass = new CompositeClassPathLoader("target/classes").load("qj.blog.classreloading.StaticInt$User");
+		ReflectUtil.setFieldValue(11, userClass.getDeclaredField("age"), null);
+
+		System.out.println("Seems to be the same class:");
+		System.out.println(userClass.getName());
+		System.out.println(User.class.getName());
+		System.out.println();
+
+		System.out.println("But why 2 different class loaders:");
+		System.out.println(userClass.getClassLoader());
+		System.out.println(User.class.getClassLoader());
+		System.out.println();
+
+		System.out.println("And different ages:");
+		System.out.println(User.age);
+		System.out.println((Integer)ReflectUtil.getFieldValue(userClass.getDeclaredField("age"), null));
+	}
+
+	public static class User {
+		public static int age = 10;
+	}
+}
+~~~
+And here is the output:
+
+~~~
+Seems to be the same class:
+qj.blog.classreloading.StaticInt$User
+qj.blog.classreloading.StaticInt$User
+
+But why there are 2 different class loaders:
+qj.util.lang.CompositeClassPathLoader@7530d0a
+sun.misc.Launcher$AppClassLoader@1f32e575
+
+And different ages:
+10
+11
+~~~
+------------------
+
+Ok, you said "classes are global" right? and there is always only one instance of 1 class object in 1 JVM, right? Then above example would definitely make you think again.
+
+<< image with 2 class loaders on right col >>
+
+The example above have shown you that it's possible to have 2 or more class definitions living together in the same JVM, and we can pick any of them to use at will. Even better, they bring with them their own portfolio - the static members (age).
+
+Now it's time for you to clap your hands and show your gratitude toward the writers of our JVM, they made it with so clean a design that theoretically allow any thing to happen. Great, but then why class reloading has always been so hard?
+
+The reason is rooted from our JVM's biggest strength: reuse of resources. Classes are expected to be loaded only once and then be used forever because that makes our application fast. When a class link to another one, then JVM (classloader) just get the old definition and give it to him. This basically will makes a giant web of many classes linked together at runtime and they live happily forever after. Well, it's good for our JVM to be happy and fast, but not so good and happy for us developers.
+
+In order to correctly reload the classes, you will have to dump the whole Giant Web of Happy Classes altogether!
+Don't miss any link or some ghost classes will come back and haunt you :-< .
+
+That is a big requirement for any system architect, especially when we want to dump the classes but keep resources like DB connections. If you are thrilled, then don't use this technique. Seriously, don't use this technique! your team-mates will kill you, you boss will kill you and you customer will kill you too, they will curse you till death. But if you are patient enough to read this post thoroughly, then practice carefully, and apply real carefully to your project... then they will love you, and you will be their hero, the rock-star of the night.
+
+(( A side note: dumping the Giant Web... may sound like a big job for our processor and you may think that it would be as slow as restarting the server. But I assure you that it is really fast! and efficient. I can keep doing it the whole day long, reloading classes thousands of times without restarting the server, in my humble laptop ))
+
+Example 2: Simple context reloading
+==============
+
+Okay, let's have a look at the next example. This time I will set up a simple context, with service and model and reload it together with classes every time we hit enter on the console:
+
+<< >>
+
+As you can see, the main method will have a hold of the context object, and **that is the only link**. From that link, the context object will link to the context class, and service object to service class etc... With a clean design like this, we know exactly what to be refreshed in order to totally dump the old classes and objects. After the new context object is created and linked, the island of old context and classes (and classloader) will be isolated and is subjected to our merciless Garbage Collector (GC).
+
+A little explanation about why normally classes are so persistent and not get collected: it's because normally we load all our classes into the default classloader, and this classloader cache all the classes it has loaded, so as long as the classloader still connected to any alive thread, everyone (all loaded classes) will be immune to the Garbage Collector. In most running applications, we have very little reason to try isolate the default classloader and GC it ( why we try to reload String class, right? ).
+
+In this example, I also have demonstrated the class structure change. The user class in version 2 have added the new attribute name new getter for it. If you have used Java Hot Swap or understood it's limitation you will understand how difficult it is to achieve. Normally, JVM will not allow any class structure change to be Hot Swapped. JRebel guys is known to have invested a lot of effort into this, including tailoring the compiled class files and replace all new methods with reflection call. I can imagine how much work they made and how much trouble they been through... That's why their product price is so high, which is reasonable. But here it is, I'm giving it to you... for free, and better yet, it's not a hack, original classes are loaded and run.
+
+To this point, many may think that it's complicated to handle the isolated context object and classes, it may be too complicated to apply it in real world projects, and not many projects are so well designed that the **all mighty** context object can be picked up to be replaced so easily. Well, you are correct, if you are fine with server restarts or the crippled JVM Hot Swap then what we are doing is not worth the troubles, or if you are rich you can buy yourself a JRebel license, but I doubt other team members can afford it. Anyway, this approach is not for every one, not for every project, so most cases you will have to come up with your own solution for you project, and that would be an overwhelming task you if are not willing to do. What I provide here the general method, and the idea that it can work, and to apply to your project, you will have to go through many more troubles. But if you think that this is a good approach and may want to apply it to your projects, then you yourself or assign someone else (good enough) to deal with it, then the whole team will surely benefit.
+
+The reason why I have listed so many techniques in the beginning but only mentioned JVM Hot Swap and JRebel later on is because other options are obsolete and can not work the last time I check (with Java 8 ). As I said, class reloading is a difficult hack and without a good financial support they can not survive the JVM upgrades.
+
+Example 3: Reloading context while persisting connection object
+============
+
+In the next example I will show you how to save yourself a little more performance by keeping the old good connection object (and there may be many other things you want to keep through reloading phases ).
+
+If you are with me from beginning then you may see that this is not difficult at all, just like a decoration of example 2
+
+Other applications of this technique:
+============
+
+ - Write logic classes that server can load on the fly (who need Groovy any more? ).
+ - Write a custom server with developer mode that helps reload every thing.
+
+
+
+
+
+
+
+
