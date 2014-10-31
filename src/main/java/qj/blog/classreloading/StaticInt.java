@@ -1,29 +1,33 @@
 package qj.blog.classreloading;
 
+import static java.lang.System.*;
+
 import qj.util.ReflectUtil;
-import qj.util.lang.CompositeClassLoader;
+import qj.util.lang.DynamicClassLoader;
 
 /**
  * Created by Quan on 26/10/2014.
  */
 public class StaticInt {
-	public static void main(String[] args) throws NoSuchFieldException {
-		Class<?> userClass = new CompositeClassLoader("target/classes").load("qj.blog.classreloading.StaticInt$User");
-		ReflectUtil.setFieldValue(11, userClass.getDeclaredField("age"), null);
+	public static void main(String[] args) {
+		Class<?> userClass = new DynamicClassLoader("target/classes")
+				.load("qj.blog.classreloading.StaticInt$User");
 
-		System.out.println("Seems to be the same class:");
-		System.out.println(userClass.getName());
-		System.out.println(User.class.getName());
-		System.out.println();
+		ReflectUtil.setStaticFieldValue(11, "age", userClass);
 
-		System.out.println("But why there are 2 different class loaders:");
-		System.out.println(userClass.getClassLoader());
-		System.out.println(User.class.getClassLoader());
-		System.out.println();
+		out.println("Seems to be the same class:");
+		out.println(userClass.getName());
+		out.println(User.class.getName());
+		out.println();
 
-		System.out.println("And different ages:");
-		System.out.println(User.age);
-		System.out.println((Integer)ReflectUtil.getFieldValue(userClass.getDeclaredField("age"), null));
+		out.println("But why there are 2 different class loaders:");
+		out.println(userClass.getClassLoader());
+		out.println(User.class.getClassLoader());
+		out.println();
+
+		out.println("And different age values:");
+		out.println(User.age);
+		out.println((int) ReflectUtil.getStaticFieldValue("age", userClass));
 	}
 
 	public static class User {

@@ -1,0 +1,198 @@
+Analysis
+=======
+
+1 - Targets :: Most important:
+----
+
+- Reader might not know yet about Class Reloading --> wonderful world await them
+- Reader would like to have quick guide to setup class reloading in there project --> Promise them they will have it --> capture their attention
+
+
+Ideas:
+---
+
+- Very difficult technique, but don't strangle them away
+
+Structure:
+-----
+
+
+old structure:
+
+- Boasting about CL technique -> Get attention
+
+Creating the amazing: Java class reloading
+============
+
+Class reloading was a very rare topic that we can come by; you can always see a project that developers have to restart server with every class change; That is a fact about Java development and no one complain about it. They have worked like that since their first day with Java. But is Java class reloading that difficult to do, and would that topic be both challenging and exciting? In this article, I will try to address the problem, thus to help you create an amazing day with this Ever-Sacred topic.
+
+But why class reloading is so difficult?
+------------
+
+Nowadays you can see JRebel advertisement every where, it's a commercial solution for Java class reloading. In their ads, they say it would help boost up 17% of your performance. I disagree with that, the number would be at least 500%. It's true. Don't think of server restarts as normal wait time, it's an interruption to your flow of logic, and for myself, it creates a lot of distraction too - I find myself often change to newspaper tab or search for porn with each restarting cycle.
+
+I'm pretty sure every developer out there would love to reload classes on the fly. Every Project Manager would love that too, they surely understand how much it would help to boost up productivity and help deadlines. But why they don't buy JRebel licences? Because it's God-Damn expensive. 
+
+Don't misjudge JRebel guys as greedy bastards, they are just honest people trying to get money for their hard work. Solutions like such is very difficult to implement, and I bet you can't find another company out there offer a cheaper solution
+
+Then what I'm doing here for?
+---------------
+
+I'm here to give you are a free solution to this problem. Believe it or not, class reloading is both difficult and easy. And if after you have read this post and still find it difficult, then I assure you that trying to solve this problem is both challenging and exciting. And a long the way, you will find yourself grow up - as a Java developer, and a software Architecture.
+
+
+The first example: Reloading 1 class
+=============
+
+Please have a look at this short file:  
+*All the files in this article are publicly available at* *****
+
+~~~java
+package qj.blog.classreloading;
+
+import static java.lang.System.*;
+
+import qj.util.ReflectUtil;
+import qj.util.lang.DynamicClassLoader;
+
+/**
+ * Created by Quan on 26/10/2014.
+ */
+public class StaticInt {
+	public static void main(String[] args) {
+		Class<?> userClass = new DynamicClassLoader("target/classes")
+				.load("qj.blog.classreloading.StaticInt$User");
+
+		ReflectUtil.setStaticFieldValue(11, "age", userClass);
+
+		out.println("Seems to be the same class:");
+		out.println(userClass.getName());
+		out.println(User.class.getName());
+		out.println();
+
+		out.println("But why there are 2 different class loaders:");
+		out.println(userClass.getClassLoader());
+		out.println(User.class.getClassLoader());
+		out.println();
+
+		out.println("And different ages:");
+		out.println(User.age);
+		out.println((int) ReflectUtil.getStaticFieldValue("age", userClass));
+	}
+
+	public static class User {
+		public static int age = 10;
+	}
+}
+
+
+~~~
+And here is the output:
+
+~~~
+Seems to be the same class:
+qj.blog.classreloading.StaticInt$User
+qj.blog.classreloading.StaticInt$User
+
+But why there are 2 different class loaders:
+qj.util.lang.DynamicClassLoader@3941a79c
+sun.misc.Launcher$AppClassLoader@1f32e575
+
+And different age values:
+10
+11
+~~~
+
+So as you can see in this example, classes are not "**Global**". JVM can load and use 2 definitions of the same class at the same time, thus we can switch between them and use flexibly.
+
+Right now you can access my GitHub, load that source code and play it with yourself.
+
+Here is the explanation of the 2 class definitions living together:
+
+<< image with 2 class loaders on right col >>
+
+As you can see, the 2 classes are not only loaded separately, but also their static members are created separately for each of them.
+
+The default class loader "sun.misc.Launcher$AppClassLoader" is pretty fixed, you can assume that it will stay in the JVM forever - together with all the classes it has loaded (User class). But the Dynamic class loader on the other hand can go away (Garbage Collected, or GC-ed ), and we can create as many Dynamic Class loaders as we want, and reload User class as many times as we want to. It's easy.
+
+Example 2: Reloading continuously
+================
+
+And here is the fun part, let's reload User class as many times as we want
+
+~~~ java
+package qj.blog.classreloading;
+
+import qj.util.ReflectUtil;
+import qj.util.ThreadUtil;
+import qj.util.lang.DynamicClassLoader;
+
+/**
+ * Created by Quan on 31/10/2014.
+ */
+public class ReloadingContinuously {
+	public static void main(String[] args) {
+		for (;;) {
+			Class<?> userClass = new DynamicClassLoader("target/classes")
+				.load("qj.blog.classreloading.ReloadingContinuously$User");
+			ReflectUtil.invokeStatic("hobby", userClass);
+			ThreadUtil.sleep(2000);
+		}
+	}
+	
+	@SuppressWarnings("UnusedDeclaration")
+	public static class User {
+		public static void hobby() {
+			playFootball(); // Will comment later
+//			playBasketball(); // Will uncomment later
+		}
+		
+		// Will comment later
+		public static void playFootball() {
+			System.out.println("Play Football");
+		}
+		
+		// Will uncomment later
+//		public static void playBasketball() {
+//			System.out.println("Play Basketball");
+//		}
+	}
+}
+~~~
+
+Here is the output:
+
+~~~
+...
+Play Football
+Play Football
+Play Football
+Play Basketball
+Play Basketball
+Play Basketball
+
+~~~
+
+Every time a new instance of DynamicClassLoader is created, and we ask it to load the User class, it will go to our "target/classes" folder and try to pick up the newest compiled class file and give to us. So we can reload class - on the fly.
+
+<< Image of many Classloaders created and GC-ed >>
+
+The reason I use this example is also to demonstrate the ability for this approach to reload the class structure - adding new method, removing old method - This has always been the limitation of JVM HotSwap and the main reason why JRebel is so expensive. Well, now we can do it by ourselves, and it's free, right?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
