@@ -16,17 +16,17 @@ public class ContextReloading {
 		}
 	}
 
-	private static void invokeHobbyService(Object context) {
-		Object hobbyService = getFieldValue("hobbyService", context);
-		invoke("hobby", hobbyService);
-	}
-
 	private static Object createContext() {
 		Class<?> contextClass = new DynamicClassLoader("target/classes")
 			.load("qj.blog.classreloading.ContextReloading$Context");
 		Object context = newInstance(contextClass);
 		invoke("init", context);
 		return context;
+	}
+
+	private static void invokeHobbyService(Object context) {
+		Object hobbyService = getFieldValue("hobbyService", context);
+		invoke("hobby", hobbyService);
 	}
 
 	@SuppressWarnings("UnusedDeclaration")

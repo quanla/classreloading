@@ -22,14 +22,9 @@ public class KeepConnectionPool {
 		}
 	}
 
-	private static void invokeService(Object context) {
-		Object hobbyService = getFieldValue("userService", context);
-		invoke("hello", hobbyService);
-	}
-	
 	private static Object createContext(ConnectionPool pool) {
 		ExceptingClassLoader classLoader = new ExceptingClassLoader(
-				(className) -> className.contains("$ConnectionPool"),
+				(className) -> className.contains("$Connection"),
 				"target/classes");
 		Class<?> contextClass = classLoader.load(KeepConnectionPool.class.getName() + "$Context");
 		Object context = newInstance(contextClass);
@@ -40,6 +35,11 @@ public class KeepConnectionPool {
 		return context;
 	}
 
+	private static void invokeService(Object context) {
+		Object hobbyService = getFieldValue("userService", context);
+		invoke("hello", hobbyService);
+	}
+	
 	@SuppressWarnings("UnusedDeclaration")
 	public static class Context {
 		public ConnectionPool pool;
@@ -56,7 +56,7 @@ public class KeepConnectionPool {
 		
 		@SuppressWarnings("UnusedDeclaration")
 		public void hello() {
-			System.out.println("UserService CL: " + this.getClass().getClassLoader());
+			System.out.println("UserService CL: " + this.getClass().getClassLoader()); // Will output ExceptingClassLoader
 			System.out.println("Hi " + pool.getConnection().getUserName());
 		}
 	}
@@ -71,7 +71,7 @@ public class KeepConnectionPool {
 	
 	public static class Connection {
 		public String getUserName() {
-			System.out.println("Connection CL: " + this.getClass().getClassLoader());
+			System.out.println("Connection CL: " + this.getClass().getClassLoader()); // Will output DefaultClassLoader
 			return "Joe";
 		}
 	}

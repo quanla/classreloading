@@ -45,7 +45,7 @@ The first example: Reloading 1 class
 =============
 
 Please have a look at this short file:  
-*All the files in this article are publicly available at* *****
+*All the files in this article are publicly available at [https://github.com/quanla/classreloading](https://github.com/quanla/classreloading)*
 
 ~~~java
 
@@ -107,7 +107,7 @@ And different age values:
 
 So as you can see in this example, classes are not "**Global**". JVM can load and use 2 definitions of the same class at the same time, thus we can switch between them and use flexibly.
 
-Right now you can access my GitHub, load that source code and play it with yourself.
+Right now you can access my [GitHub](https://github.com/quanla/classreloading), load that source code and play it with yourself.
 
 Here is the explanation of the 2 class definitions living together:
 
@@ -179,9 +179,9 @@ Every time a new instance of `DynamicClassLoader` is created, and we ask it to l
 
 << Image of many Classloaders created and GC-ed >>
 
-The reason I use this example is also to demonstrate the ability for this approach to reload the class structure - adding new method, removing old method - This has always been the limitation of JVM HotSwap and the main reason why JRebel is so expensive. Well, now we can do it by ourselves, and it's free, right?
+Another reason I use this example is also to demonstrate the ability for this approach to reload the class structure - adding new method, removing old method - This has always been the limitation of JVM HotSwap and the main reason why JRebel is so expensive. Well, now we can do it by ourselves, and it's free, right?
 
-As we reached this point, many may feel bored. This is only basics of Java class reloading, and even they have known these many years ago, they still have to restart server or buy JRebel. Why? because it's very difficult to apply this technique to their real life project. I also cannot guarantee you that this article will help you do class reloading to your project, but I can promise you a good example of a complex web application, thus you can get many lessons about what difficulties you may have while attempting to use this technique.
+As we reached this point, many may feel bored. This is only basics of Java class reloading, and even they have known these many years ago, but still, they have to do server restarts or buy JRebel. Why? because it's very difficult to apply this technique to their real life project. I also cannot guarantee you that this article will help you do class reloading, but I can promise you a good example of a complex web application, thus you can get many lessons about what difficulties you may have while attempting to use this technique.
 
 
 Example 3: Simple context reloading
@@ -200,7 +200,129 @@ Example 4: Reloading context while persisting connection object
 
 In the next example I will show you how to save yourself a little more performance by keeping the old good connection object. In actual project, there would be many other things you want to keep through reloading phases, and this contribute to the reason while this topic is so difficult
 
-Just like what we have in Example 3, this example will show you how to cleanly separate the resource need to be reloaded and the one we need to keep
+~~~ java
+
+package qj.blog.classreloading;
+
+import static qj.util.ReflectUtil.*;
+
+import qj.util.ThreadUtil;
+import qj.util.lang.ExceptingClassLoader;
+
+/**
+ * Created by Quan on 01/11/2014.
+ */
+public class KeepConnectionPool {
+	public static void main(String[] args) {
+
+		ConnectionPool pool = new ConnectionPool();
+
+		for (;;) {
+			Object context = createContext(pool);
+
+			invokeService(context);
+
+			ThreadUtil.sleep(2000);
+		}
+	}
+
+	private static void invokeService(Object context) {
+		Object hobbyService = getFieldValue("userService", context);
+		invoke("hello", hobbyService);
+	}
+	
+	private static Object createContext(ConnectionPool pool) {
+		ExceptingClassLoader classLoader = new ExceptingClassLoader(
+				(className) -> className.contains("$Connection"),
+				"target/classes");
+		Class<?> contextClass = classLoader.load(KeepConnectionPool.class.getName() + "$Context");
+		Object context = newInstance(contextClass);
+		
+		setFieldValue(pool, "pool", context);
+		invoke("init", context);
+
+		return context;
+	}
+
+	@SuppressWarnings("UnusedDeclaration")
+	public static class Context {
+		public ConnectionPool pool;
+		
+		public UserService userService = new UserService();
+		
+		public void init() {
+			userService.pool = pool;
+		}
+	}
+	
+	public static class UserService {
+		ConnectionPool pool;
+		
+		@SuppressWarnings("UnusedDeclaration")
+		public void hello() {
+			System.out.println("UserService CL: " + this.getClass().getClassLoader()); // Will output ExceptingClassLoader
+			System.out.println("Hi " + pool.getConnection().getUserName());
+		}
+	}
+	
+	public static class ConnectionPool {
+		Connection conn = new Connection();
+		
+		public Connection getConnection() {
+			return conn;
+		}
+	}
+	
+	public static class Connection {
+		public String getUserName() {
+			System.out.println("Connection CL: " + this.getClass().getClassLoader()); // Will output DefaultClassLoader
+			return "Joe";
+		}
+	}
+}
+
+~~~
+
+Output:
+
+~~~
+
+UserService CL: qj.util.lang.ExceptingClassLoader@4fca772d
+Connection CL: sun.misc.Launcher$AppClassLoader@1f32e575
+Hi Joe
+
+~~~
+
+Similar setup to Example 3, but this example will focus more on how to cleanly separate the resources need to be reloaded and the ones we need to keep persisted.
+
+<< Image of persisted resources and reloading resources >>
+
+You can see that also the Connection and Connection Pool objects are referred from our reloaded Context and Service, they totally reside in the persisted scope, and loaded by JVM's default class loader.
+
+It's important to keep a clean separation of persisted and reloading resources. If we change the example source code a little bit, replacing line 32 from:
+
+~~~
+(className) -> className.contains("$Connection"),
+~~~
+
+to
+
+~~~
+(className) -> className.contains("$ConnectionPool"),
+~~~
+
+Then, as a result, will allow the reloading context to load class `Connection`, then there will be 2 "`Connection`" classes in use at the same time, and you will see this weird error that you may not be able to explain: 
+
+~~~
+Caused by: java.lang.LinkageError: loader constraint violation: loader (instance of qj/util/lang/ExceptingClassLoader) previously initiated loading for a different type with name "qj/blog/classreloading/KeepConnectionPool$Connection"
+~~~
+
+Here is the visualized context of the error:
+
+<< image with 2 Connection classes in use >>
+
+In your project, you should separate those classes in a separated module, so you don't have to worry that the Dynamic Classloader accidentally load them.
+
 
 Example 5: The complex Web App with class reloading
 =====
@@ -215,7 +337,7 @@ Conclusion:
 
 So the key factor to achieve this is to have a super clean design, and with such you can freely manipulate your classes and the whole JVM
 
-What if you can't have a super clean design
+What if you don't have a super clean design
 --------
 
 Then try to make a super clean design first, because without that, you will never be able to achieve the target. Even if you are quite confident with your design already, but just a little bit confused at some point, then some classes may not be totally cleaned, they will still have link back to the application and thus generate ghost-like behaviors that no one will enjoy. But don't worry, this will only happen during development, and will not affect the customers.
