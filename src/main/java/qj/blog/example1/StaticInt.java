@@ -1,4 +1,4 @@
-package qj.blog.classreloading;
+package qj.blog.example1;
 
 import static java.lang.System.*;
 
@@ -11,9 +11,8 @@ import qj.util.lang.DynamicClassLoader;
 public class StaticInt {
 	public static void main(String[] args) {
 		Class<?> userClass = new DynamicClassLoader("target/classes")
-				.load("qj.blog.classreloading.StaticInt$User");
+				.load("qj.blog.example1.StaticInt$User");
 
-		ReflectUtil.setStaticFieldValue(11, "age", userClass);
 
 		out.println("Seems to be the same class:");
 		out.println(userClass.getName());
@@ -25,8 +24,9 @@ public class StaticInt {
 		out.println(User.class.getClassLoader());
 		out.println();
 
+		User.age = 11;
 		out.println("And different age values:");
-		out.println(User.age);
+		out.println((int) ReflectUtil.getStaticFieldValue("age", User.class));
 		out.println((int) ReflectUtil.getStaticFieldValue("age", userClass));
 	}
 

@@ -49,7 +49,7 @@ Please have a look at this short file:
 
 ~~~java
 
-package qj.blog.classreloading;
+package qj.blog.example1;
 
 import static java.lang.System.*;
 
@@ -62,9 +62,8 @@ import qj.util.lang.DynamicClassLoader;
 public class StaticInt {
 	public static void main(String[] args) {
 		Class<?> userClass = new DynamicClassLoader("target/classes")
-				.load("qj.blog.classreloading.StaticInt$User");
+				.load("qj.blog.example1.StaticInt$User");
 
-		ReflectUtil.setStaticFieldValue(11, "age", userClass);
 
 		out.println("Seems to be the same class:");
 		out.println(userClass.getName());
@@ -76,8 +75,9 @@ public class StaticInt {
 		out.println(User.class.getClassLoader());
 		out.println();
 
-		out.println("And different ages:");
-		out.println(User.age);
+		User.age = 11;
+		out.println("And different age values:");
+		out.println((int) ReflectUtil.getStaticFieldValue("age", User.class));
 		out.println((int) ReflectUtil.getStaticFieldValue("age", userClass));
 	}
 
@@ -93,16 +93,16 @@ And here is the output:
 
 ~~~
 Seems to be the same class:
-qj.blog.classreloading.StaticInt$User
-qj.blog.classreloading.StaticInt$User
+qj.blog.example1.StaticInt$User
+qj.blog.example1.StaticInt$User
 
 But why there are 2 different class loaders:
 qj.util.lang.DynamicClassLoader@3941a79c
 sun.misc.Launcher$AppClassLoader@1f32e575
 
 And different age values:
-10
 11
+10
 ~~~
 
 So as you can see in this example, classes are not "**Global**". JVM can load and use 2 definitions of the same class at the same time, thus we can switch between them and use flexibly.
@@ -117,13 +117,29 @@ As you can see, the 2 classes are not only loaded separately, but also their sta
 
 The default class loader `sun.misc.Launcher$AppClassLoader` is pretty fixed, you can assume that it will stay in the JVM forever - together with all the classes it has loaded (`User` class). But the Dynamic class loader on the other hand can go away (Garbage Collected, or GC-ed ), and we can create as many Dynamic Class loaders as we want, and reload `User` class as many times as we want to. It's easy.
 
+Here you can see that I use a custom class loader: DynamicClassLoader. The DynamicClassLoader does a fine job capable of every thing the default class loader does, and more.
+
+The Dynamic Class Loader:
+----------------------------
+
+Unlike the default behaviour of a class loader, our Dynamic Class Loader has a more aggressive strategy. A normal class loader would give its parent classloader the priority and only load classes that its parent can not load. This seems nice and suitable for normal circumstances, but not in our case. The Dynamic Class loader on the other hand will try to look through all its class paths and resolve the target class before it give up the right to its parent. Remember that whenever it gives up the loading of one class ( A ) to its parent, all the linked classes from class A will then be loaded by the parent class loader and that parent class loader will never refer to our class loader for help.
+
+Few more things about this Dynamic Class Loader:
+- It's capable of loading all system classes and library - if you specify in it's classpaths.
+- The loaded classes have the same performance and other attributes as other classes loaded by the default class loader.
+- The Dynamic Class Loader can be Garbage Collected together with all of it's loaded classes and objects.
+
+In this example 1, the Dynamic Classloader is created with only 1 class path: "target/classes" ( in our current directory ), so it's capable of loading all the classes reside in that classpath. For all the classes not in there, it will have to refer to the parent class loader. For example we need to load String class in our StaticInt class, and our class loader does not have access to the rt.jar in our jre folder, so the String class of the parent class loader will be used ( assuming that String class is managed by normal classloaders ).
+
+With this small example, we have opened a whole new world, if 2 versions of the same class can coexist, how about 2 versions of the same system? Or a system that can host and load/unload sub-systems? Let's master this technique for your own good.
+
 Example 2: Reloading continuously
 ================
 
-And here is the fun part, let's reload User class as many times as we want
+This example will show you that the JRE can reload our system classes an infinite number of time.
 
 ~~~ java
-package qj.blog.classreloading;
+package qj.blog.example2;
 
 import qj.util.ReflectUtil;
 import qj.util.ThreadUtil;
@@ -136,7 +152,7 @@ public class ReloadingContinuously {
 	public static void main(String[] args) {
 		for (;;) {
 			Class<?> userClass = new DynamicClassLoader("target/classes")
-				.load("qj.blog.classreloading.ReloadingContinuously$User");
+				.load("qj.blog.example2.ReloadingContinuously$User");
 			ReflectUtil.invokeStatic("hobby", userClass);
 			ThreadUtil.sleep(2000);
 		}
@@ -175,34 +191,42 @@ Play Basketball
 
 ~~~
 
-Every time a new instance of `DynamicClassLoader` is created, and we ask it to load the User class, it will go to our "`target/classes`" folder and try to pick up the newest compiled class file and give to us. So we can reload class - on the fly.
+In this example, we set up an infinite loop, and with each cycle, we create a brand new class loader and drop all the references to the old class loader and classes. I also demonstrate here the ability to pick up new class definition by leaving parts of the class in comments, so when you change the class by comment/uncomment code lines, you will see the latest compiled classes is in used.
+
+Every time a new instance of `DynamicClassLoader` is created, and we ask it to load the User class, it will go to our "`target/classes`" folder and try to pick up the newest compiled class file. So we can reload class - on the fly.
 
 << Image of many Classloaders created and GC-ed >>
 
-Another reason I use this example is also to demonstrate the ability for this approach to reload the class structure - adding new method, removing old method - This has always been the limitation of JVM HotSwap and the main reason why JRebel is so expensive. Well, now we can do it by ourselves, and it's free, right?
-
-As we reached this point, many may feel bored. This is only basics of Java class reloading, and even they have known these many years ago, but still, they have to do server restarts or buy JRebel. Why? because it's very difficult to apply this technique to their real life project. I also cannot guarantee you that this article will help you do class reloading, but I can promise you a good example of a complex web application, thus you can get many lessons about what difficulties you may have while attempting to use this technique.
+Another reason point worth notify in this example is the ability to reload the class structure - adding new method playBasketball and removing old method playFootball. This is a very important feature of class reloading that's definitely needed during development, but is not available in JVM HotSwap technique and JRebel approach, although based on JVM HotSwap and capable of this feature, has to use an ugly and difficult workaround with class manipulation and reflection. This explain why our approach is the most elegant and official way to do class reloading.
 
 
 Example 3: Simple context reloading
 ==============
 
-Okay, let's have a look at the next example. This time I will set up a simple context, with a service and a model and reload them all together every time we hit enter on the console:
+This example we will have a setup much closer to a normal application, with a simple context, a service and a model
 
 << >>
 
-As you can see, the main method will have a hold of the context object, and **that is the only link**. If we break that link, the context object and the context class, and the service object ... will all be eligible for GC-ed... With a clean design like this, we know exactly what to be cut and created a new in order to totally dump all the old classes and objects.
+This setup is very similar to example 2 in the way it work: infinite loop and recreate the class loader plus drop all old references with each cycle. The difference is the class loader is not loading a single class, but instead a much more complex business is executed: create a context object, invoke its init method which in turn will create a full application object tree with service and model.
 
-A little explanation about why normally classes are so persistent and not get Garbage Collected: it's because normally we load all our classes into the default classloader, and this classloader cache all the classes it has loaded, so as long as the classloader still connected to any alive thread, everything (all loaded classes) will be immune to the Garbage Collector.
+As the number of classes and objects grow, our step of "drop old references" will also be more delicate, as this is the biggest reason why class reloading is so difficult. We will have to make sure that once the new context created all the references to the old classes and objects are dropped. This can sound a little difficult, but soon I will show you the way to deal with it elegantly.
+
+The main method here will have a hold of the context object, and **that is the only link**. If we break that link, the context object and the context class, and the service object ... will all be eligible for Garbage Collected... We know it because our setup here is rather simple, with the knowledge that most of the system will be reloaded, and the persisted part will have no hideous cache to store any old references. With a clean design like this, we know exactly what to be cut and created a new in order to totally dump all the old classes and objects.
+
+A little explanation about why normally classes are so persistent and not get Garbage Collected:
+- Normally we load all our classes into the default classloader
+- The class - class loader is a 2-ways relationship with the classloader also cache all the classes it has loaded
+- So as long as the classloader still connected to any alive thread, everything (all loaded classes) will be immune to the Garbage Collector.
+- There is a little chance that the default classloader is not garbage collected, we can, but it will require stopping all current threads launch anew inside new DefaultClassLoader's scope ( Luckily we don't have to reload the Thread class itself because all those basic classes are loaded and cached by a special JVM classloader )
 
 Example 4: Reloading context while persisting connection object
 ============
 
-In the next example I will show you how to save yourself a little more performance by keeping the old good connection object. In actual project, there would be many other things you want to keep through reloading phases, and this contribute to the reason while this topic is so difficult
+In the next example I will show you how to keep the old good connection object. 
 
 ~~~ java
 
-package qj.blog.classreloading;
+package qj.blog.example4;
 
 import static qj.util.ReflectUtil.*;
 
@@ -293,35 +317,18 @@ Hi Joe
 
 ~~~
 
-Similar setup to Example 3, but this example will focus more on how to cleanly separate the resources need to be reloaded and the ones we need to keep persisted.
+In real life projects, there would be many other things you want to keep through the reloading phases. Actually, the subject of keeping parts of the system out of reloading cycle is crucial, and is definitely needed. If we have to reload all parts of our system, then our reloading solution is no better than restarting the whole server. The question is how to draw a clean separation line of what to persist and what to reload.
+
+Similar setup to Example 3, with infinite loop and creating DynamicClassLoader with each cycle, but this example will do a little differently by creating and maintaining a ConnectionPool object outside of the reloading cycles. Each time a context object is created, it will receive the reference to the persisted ConnectionPool object, and thus, they are linked together again.
 
 << Image of persisted resources and reloading resources >>
 
 You can see that also the Connection and Connection Pool objects are referred from our reloaded Context and Service, they totally reside in the persisted scope, and loaded by JVM's default class loader.
 
-It's important to keep a clean separation of persisted and reloading resources. If we change the example source code a little bit, replacing line 32 from:
 
-~~~
-(className) -> className.contains("$Connection"),
-~~~
+In this example, the DynamicClassLoader is not used but instead a sub-class of it called ExceptingClassLoader which allow us to NOT load certain classes. We need to use this subclass because the mock classes Connection and ConnectionPool reside in the same module as our main class, thus are to be loaded by the DynamicClassLoader, we don't want this to happen. If the DynamicClassLoader load those Connection classes, then 2 versions of those classes will be used, one in the persisted part and one in the reloaded part. When we call the init method in Context object it will throw an error as it find out the ConnectionPool object in parameter is not of the same class as the parameter type.
 
-to
-
-~~~
-(className) -> className.contains("$ConnectionPool"),
-~~~
-
-Then, as a result, will allow the reloading context to load class `Connection`, then there will be 2 "`Connection`" classes in use at the same time, and you will see this weird error that you may not be able to explain: 
-
-~~~
-Caused by: java.lang.LinkageError: loader constraint violation: loader (instance of qj/util/lang/ExceptingClassLoader) previously initiated loading for a different type with name "qj/blog/classreloading/KeepConnectionPool$Connection"
-~~~
-
-Here is the visualized context of the error:
-
-<< image with 2 Connection classes in use >>
-
-In your project, you should separate those classes in a separated module, so you don't have to worry that the Dynamic Classloader accidentally load them.
+In your project, you should separate those persisted classes in a separated module and exclude that module from the DynamicClassLoader's classpaths, so you don't have to worry that the Dynamic Classloader accidentally load them.
 
 
 Example 5: The complex Web App with class reloading
@@ -329,6 +336,13 @@ Example 5: The complex Web App with class reloading
 
 This is not the final solution for all the applications out there, the actual solution will vary from project to project, framework to framework. What I'm trying to show here is that it is achievable and with your knowledge of the system and the class reloading mechanism, you will be able to make it happen.
 
+
+Difficulties:
+===========
+
+- Frameworks like Hibernate, OpenJPA, or even Log4j have an internal cache for classes, and this would lead to old classes not able to be cleaned and even being used. If you can not clean that cache or restart the framework totally, then it would lead to your development server out of memory or even unexpected behaviours ( from the execution on old classes )
+- One trick to deal with the complex framework setup is to broaden the DynamicClassLoader's classpaths and cover all the libraries, so that all the external libraries classes will also be reloaded with each reloading cycle. There is no way a cache can exist if the classes are dropped together with their static members. You may argue here that those libraries may be used be the persisted part of our system (like Log4J used in webserver), my answer is yes, let it be 2 versions of those libraries in use, one for the persisted part and one for the reloaded part.
+- In case of web-applications, you must not store a complex object into session. "Complex object" mean the objects with classes need to be reloaded. Try to store it's attributes like id, name only, or you can serialize the object with json and store it. You would not want our session hold reference to the old definition of the class.
 
 
 
@@ -345,7 +359,6 @@ Then try to make a super clean design first, because without that, you will neve
 It is a fact, class reloading is very difficult, I'm not trying to scare you. But if you started to do it and at some point you find your classes be loaded on the fly, then you are almost there already. There will be very little thing left to do before you can achieve totally superb clean design for your system.
 
 Good luck my friends and hope you all can do it.
-
 
 
 

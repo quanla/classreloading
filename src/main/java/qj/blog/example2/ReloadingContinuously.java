@@ -1,4 +1,4 @@
-package qj.blog.classreloading;
+package qj.blog.example2;
 
 import qj.util.ReflectUtil;
 import qj.util.ThreadUtil;
@@ -11,7 +11,7 @@ public class ReloadingContinuously {
 	public static void main(String[] args) {
 		for (;;) {
 			Class<?> userClass = new DynamicClassLoader("target/classes")
-				.load("qj.blog.classreloading.ReloadingContinuously$User");
+				.load("qj.blog.example2.ReloadingContinuously$User");
 			ReflectUtil.invokeStatic("hobby", userClass);
 			ThreadUtil.sleep(2000);
 		}

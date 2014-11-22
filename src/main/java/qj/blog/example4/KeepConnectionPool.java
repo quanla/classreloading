@@ -1,4 +1,4 @@
-package qj.blog.classreloading;
+package qj.blog.example4;
 
 import static qj.util.ReflectUtil.*;
 
