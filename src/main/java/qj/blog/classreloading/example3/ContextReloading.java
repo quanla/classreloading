@@ -1,4 +1,4 @@
-package qj.blog.example3;
+package qj.blog.classreloading.example3;
 
 import static qj.util.ReflectUtil.*;
 import qj.util.ThreadUtil;
@@ -18,7 +18,7 @@ public class ContextReloading {
 
 	private static Object createContext() {
 		Class<?> contextClass = new DynamicClassLoader("target/classes")
-			.load("qj.blog.example3.ContextReloading$Context");
+			.load("qj.blog.classreloading.example3.ContextReloading$Context");
 		Object context = newInstance(contextClass);
 		invoke("init", context);
 		return context;

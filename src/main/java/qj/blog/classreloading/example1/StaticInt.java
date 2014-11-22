@@ -1,4 +1,4 @@
-package qj.blog.example1;
+package qj.blog.classreloading.example1;
 
 import static java.lang.System.*;
 
@@ -11,7 +11,7 @@ import qj.util.lang.DynamicClassLoader;
 public class StaticInt {
 	public static void main(String[] args) {
 		Class<?> userClass = new DynamicClassLoader("target/classes")
-				.load("qj.blog.example1.StaticInt$User");
+				.load("qj.blog.classreloading.example1.StaticInt$User");
 
 
 		out.println("Seems to be the same class:");

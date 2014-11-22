@@ -49,7 +49,7 @@ Please have a look at this short file:
 
 ~~~java
 
-package qj.blog.example1;
+package qj.blog.classreloading.example1;
 
 import static java.lang.System.*;
 
@@ -62,7 +62,7 @@ import qj.util.lang.DynamicClassLoader;
 public class StaticInt {
 	public static void main(String[] args) {
 		Class<?> userClass = new DynamicClassLoader("target/classes")
-				.load("qj.blog.example1.StaticInt$User");
+				.load("qj.blog.classreloading.example1.StaticInt$User");
 
 
 		out.println("Seems to be the same class:");
@@ -93,8 +93,8 @@ And here is the output:
 
 ~~~
 Seems to be the same class:
-qj.blog.example1.StaticInt$User
-qj.blog.example1.StaticInt$User
+qj.blog.classreloading.example1.StaticInt$User
+qj.blog.classreloading.example1.StaticInt$User
 
 But why there are 2 different class loaders:
 qj.util.lang.DynamicClassLoader@3941a79c
@@ -139,7 +139,7 @@ Example 2: Reloading continuously
 This example will show you that the JRE can reload our system classes an infinite number of time.
 
 ~~~ java
-package qj.blog.example2;
+package qj.blog.classreloading.example2;
 
 import qj.util.ReflectUtil;
 import qj.util.ThreadUtil;
@@ -152,7 +152,7 @@ public class ReloadingContinuously {
 	public static void main(String[] args) {
 		for (;;) {
 			Class<?> userClass = new DynamicClassLoader("target/classes")
-				.load("qj.blog.example2.ReloadingContinuously$User");
+				.load("qj.blog.classreloading.example2.ReloadingContinuously$User");
 			ReflectUtil.invokeStatic("hobby", userClass);
 			ThreadUtil.sleep(2000);
 		}
@@ -226,7 +226,7 @@ In the next example I will show you how to keep the old good connection object.
 
 ~~~ java
 
-package qj.blog.example4;
+package qj.blog.classreloading.example4;
 
 import static qj.util.ReflectUtil.*;
 
@@ -325,10 +325,9 @@ Similar setup to Example 3, with infinite loop and creating DynamicClassLoader w
 
 You can see that also the Connection and Connection Pool objects are referred from our reloaded Context and Service, they totally reside in the persisted scope, and loaded by JVM's default class loader.
 
-
 In this example, the DynamicClassLoader is not used but instead a sub-class of it called ExceptingClassLoader which allow us to NOT load certain classes. We need to use this subclass because the mock classes Connection and ConnectionPool reside in the same module as our main class, thus are to be loaded by the DynamicClassLoader, we don't want this to happen. If the DynamicClassLoader load those Connection classes, then 2 versions of those classes will be used, one in the persisted part and one in the reloaded part. When we call the init method in Context object it will throw an error as it find out the ConnectionPool object in parameter is not of the same class as the parameter type.
 
-In your project, you should separate those persisted classes in a separated module and exclude that module from the DynamicClassLoader's classpaths, so you don't have to worry that the Dynamic Classloader accidentally load them.
+In your project, you should separate those persisted classes in a separated module and exclude that module from the DynamicClassLoader's classpaths, so you don't have to worry that the DynamicClassLoader accidentally load them.
 
 
 Example 5: The complex Web App with class reloading
