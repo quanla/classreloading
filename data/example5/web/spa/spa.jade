@@ -1,0 +1,34 @@
+!!!
+html(ng-app="classreloading.app",lang="en")
+  head
+    title Demo Class Reloading - Example 5
+    meta(name="viewport",content="width=device-width, initial-scale=1")
+    
+    meta(charset="UTF-8")
+    link(rel="stylesheet",href="/bootstrap_3.2.0/bootstrap.min.css")
+
+    script(src="/jquery-2.1.1/jquery-2.1.1.min.js")
+    script(src="/bootstrap_3.2.0/bootstrap.min.js")
+    
+    script(src="/angular_1.3.1/angular.min.js")
+    script(src="/angular_1.3.1/angular-resource.min.js")
+    script(src="/angular_1.3.1/angular-sanitize.min.js")
+    script(src="/angular_1.3.1/angular-animate.min.js")
+    
+    script(src="/angular_1.3.1/angular-ui-router.min.js")
+    
+    script(src="/bootstrap_3.2.0/ui-bootstrap-tpls-0.11.2.min.js")
+    
+    // spa-js
+
+    script
+      var App = App || {};
+      App.version = "#{version}";
+
+  body
+    .container(ui-view)
+//
+    pre
+      div $state = {{$state.current.name}}
+      div $stateParams = {{$stateParams}}
+      div $state full url = {{ $state.$current.url.source }}

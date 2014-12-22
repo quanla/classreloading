@@ -1,0 +1,8 @@
+h1 Hello World
+
+.lead Here are contacts that we have in database:
+
+table.table.table-striped.table-hover
+  tr(ng-repeat="person in persons")
+    td.text-right(style="width: 20px") {{ $index + 1 }}
+    td {{ person.name }}
