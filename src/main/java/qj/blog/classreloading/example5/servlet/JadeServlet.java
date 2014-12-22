@@ -76,7 +76,7 @@ public class JadeServlet extends HttpServlet {
 		};
 		FileUtil.eachFile(new File(webLoc + "/spa"), collect);
 
-		return Cols.join(Cols.yield(col, s -> "<script src=\"/spa" + s + "?v=" + version + "\"></script>"), "");
+		return Cols.join((Iterable<String>)Cols.yield(col, s -> "<script src=\"/spa" + s + "?v=" + version + "\"></script>"), "");
 	}
 
 	public void init(String webLoc) {

@@ -1,17 +1,18 @@
 package qj.blog.classreloading.example5;
 
-import org.apache.commons.dbcp2.BasicDataSource;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import qj.tool.build.BuildUtil;
 import qj.tool.web.ReloadingWebContext;
 import qj.tool.web.ResourceFilter;
-import qj.util.*;
+import qj.util.PropertiesUtil;
+import qj.util.RegexUtil;
+import qj.util.SystemUtil;
+import qj.util.ThreadUtil;
 import qj.util.funct.F0;
 import qj.util.funct.P0;
-import qj.util.lang.DynamicClassLoader;
+import qj.util.lang.ExceptingClassLoader;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServlet;
@@ -35,11 +36,11 @@ public class WebApp {
 		startServer(config);
 	}
 	
-	public static class Build {
-		public static void main(String[] args) {
-			System.out.println(BuildUtil.runCommand(WebApp.class));
-		}
-	}
+//	public static class Build {
+//		public static void main(String[] args) {
+//			System.out.println(BuildUtil.runCommand(WebApp.class));
+//		}
+//	}
 
 	public static void startServer(Properties config) throws Exception {
 		final ServerControl webServer = startWebServer(config);
@@ -73,7 +74,8 @@ public class WebApp {
 				"qj.blog.classreloading.example5.Context",
 				() -> ( development ?
 						// During development, the dynamic class loader will be used
-						new DynamicClassLoader(
+						new ExceptingClassLoader(
+							(className) -> true,
 							"target/classes"
 						) :
 						

@@ -23,7 +23,11 @@
 			<artifactId>jade4j</artifactId>
 			<version>0.4.0</version>
 		</dependency>
-
+        <dependency>
+            <groupId>javax</groupId>
+            <artifactId>javaee-api</artifactId>
+            <version>7.0</version>
+        </dependency>
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-server</artifactId>
