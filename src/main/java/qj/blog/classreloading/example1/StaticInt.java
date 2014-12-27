@@ -14,7 +14,6 @@ public class StaticInt {
 		Class<?> userClass2 = new DynamicClassLoader("target/classes")
 				.load("qj.blog.classreloading.example1.StaticInt$User");
 
-
 		out.println("Seems to be the same class:");
 		out.println(userClass1.getName());
 		out.println(userClass2.getName());

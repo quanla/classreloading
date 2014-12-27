@@ -68,7 +68,7 @@ public class Cols {
         if (objs == null) {
             return "";
         }
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		for (A a : objs) {
 			sb.append(a).append(delimiter);
 		}

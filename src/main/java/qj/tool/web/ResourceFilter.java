@@ -1,8 +1,7 @@
 package qj.tool.web;
 
-import qj.util.DateUtil;
+import qj.util.FileUtil;
 import qj.util.IOUtil;
-import qj.util.QFileUtil.QFile;
 import qj.util.funct.F1;
 
 import javax.servlet.*;
@@ -11,19 +10,15 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Date;
 import java.util.LinkedList;
-import java.util.TimeZone;
 import java.util.concurrent.TimeoutException;
 
 public class ResourceFilter implements Filter {
 
-	private boolean development;
 	private F1<HttpServletRequest, String> rootRedirect;
-	LinkedList<F1<String, QFile>> locationFs = new LinkedList<>();
+	LinkedList<F1<String, File>> locationFs = new LinkedList<>();
 
-	public ResourceFilter(boolean development, F1<HttpServletRequest,String> rootRedirect, String... locations) {
-		this.development = development;
+	public ResourceFilter(F1<HttpServletRequest,String> rootRedirect, String... locations) {
 		this.rootRedirect = rootRedirect;
 
 		for (final String loc : locations) {
@@ -31,7 +26,6 @@ public class ResourceFilter implements Filter {
 				locationFs.add(locF(loc));
 			}
 		}
-		locationFs.add(classpathlocF(ResourceFilter.class, "/js"));
 	}
 	
 	@Override
@@ -39,9 +33,12 @@ public class ResourceFilter implements Filter {
 	}
 
 	@Override
+	public void init(FilterConfig filterConfig) throws ServletException {
+	}
+
+	@Override
 	public void doFilter(ServletRequest req1, ServletResponse resp1,
 			FilterChain chain) throws IOException, ServletException {
-//		System.out.println("ResourceFilter 1");
 		HttpServletRequest req = (HttpServletRequest) req1;
 		HttpServletResponse resp = (HttpServletResponse) resp1;
 		String uri = req.getRequestURI();
@@ -51,31 +48,20 @@ public class ResourceFilter implements Filter {
 			resp.sendRedirect(redirectLocation);
 			return;
 		}
-//		System.out.println("ResourceFilter 2");
 		
-		QFile file = getFile(uri);
+		File file = getFile(uri);
 		if (file != null) {
 			serve((HttpServletResponse) resp1, file, uri);
 		} else if (uri.endsWith(".js") || uri.endsWith(".css") || uri.endsWith(".jpg") || uri.endsWith(".png")) {
 			resp.sendError(404);
 		} else {
-//			System.out.println("ResourceFilter 3");
 			chain.doFilter(req1, resp1);
 		}
 		
 	}
 
-	private void serve(HttpServletResponse resp, QFile file, String uri) throws IOException {
+	private void serve(HttpServletResponse resp, File file, String uri) throws IOException {
 //		resp.setCharacterEncoding("UTF-8");
-		if (!development 
-				|| uri.contains("/redmond/")
-				|| uri.contains("jquery")
-//				|| uri.contains("/img/button_")
-				) {
-			long length =  7 * 24 * 60 * 60;
-			resp.setHeader("Cache-Control", "private, max-age=" + length);
-			resp.setHeader("Expires", DateUtil.format(new Date(System.currentTimeMillis() + length*1000), "E, dd MMM yyyy HH:mm:ss z", TimeZone.getTimeZone("GMT")));
-		}
 		
 		resp.setContentType(
 					uri.endsWith(".js" ) ? "application/javascript" : 
@@ -88,12 +74,12 @@ public class ResourceFilter implements Filter {
 		
 		F1<String, String> contentFilter = getContentFilter(uri);
 		if (contentFilter != null) {
-			String content = contentFilter.e(IOUtil.toString(file.getInputStream(), "UTF-8"));
+			String content = contentFilter.e(IOUtil.toString(FileUtil.fileInputStream(file), "UTF-8"));
 			resp.getOutputStream().write(content.getBytes(Charset.forName("UTF-8")));
 		} else {
 			ServletOutputStream out = resp.getOutputStream();
 			try {
-				IOUtil.connect(file.getInputStream(), out);
+				IOUtil.connect(FileUtil.fileInputStream(file), out);
 			} catch (IOException e) {
 				if (e.getCause() != null && e.getCause() instanceof TimeoutException) {
 					;
@@ -131,13 +117,13 @@ public class ResourceFilter implements Filter {
 		}
 	}
 
-	private QFile getFile(String uri) {
+	private File getFile(String uri) {
 		if (uri.contains("//") || uri.contains("..") || uri.contains("./") || uri.contains("\\")) {
 			return null;
 		}
 		
-		for (F1<String, QFile> locF : locationFs) {
-			QFile file = locF.e(uri);
+		for (F1<String, File> locF : locationFs) {
+			File file = locF.e(uri);
 			if (file != null) {
 				return file;
 			}
@@ -145,31 +131,14 @@ public class ResourceFilter implements Filter {
 		return null;
 	}
 
-	public F1<String, QFile> locF(final String loc) {
+	public F1<String, File> locF(final String loc) {
 		return uri -> {
 			File file = new File(loc + uri);
 			if (file.exists() && file.isFile()) {
-				return new QFile(file);
+				return file;
 			}
 			return null;
 		};
 	}
 	
-	public F1<String, QFile> classpathlocF(final Class clazz, final String asFolder) {
-		return uri -> {
-			final String fileName;
-			if (!uri.startsWith(asFolder) || (fileName=uri.substring(asFolder.length() + 1)).contains("/")) {
-				return null;
-			}
-			if (clazz.getResource(fileName) == null) {
-				return null;
-			}
-			return new QFile(fileName, () -> clazz.getResourceAsStream(fileName));
-		};
-	}
-
-	@Override
-	public void init(FilterConfig arg0) throws ServletException {
-	}
-
 }

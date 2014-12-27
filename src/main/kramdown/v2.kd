@@ -112,7 +112,7 @@ Right now you can access my [GitHub](https://github.com/quanla/classreloading), 
 
 Here is the explanation of the 2 class definitions living together:
 
-<< image with 2 class loaders on right col >>
+<< image 1_2_loaders.jpg on right col >>
 
 As you can see, the 2 classes are not only loaded separately, but also their static members are created separately for each of them.
 
@@ -196,7 +196,7 @@ In this example, we set up an infinite loop, and with each cycle, we create a br
 
 Every time a new instance of `DynamicClassLoader` is created, and we ask it to load the User class, it will go to our "`target/classes`" folder and try to pick up the newest compiled class file. So we can reload class - on the fly.
 
-<< Image of many Classloaders created and GC-ed >>
+<< Image 2_many_loaders.jpg  >>
 
 Another reason point worth notify in this example is the ability to reload the class structure - adding new method playBasketball and removing old method playFootball. This is a very important feature of class reloading that's definitely needed during development, but is not available in JVM HotSwap technique and JRebel approach, although based on JVM HotSwap and capable of this feature, has to use an ugly and difficult workaround with class manipulation and reflection. This explain why our approach is the most elegant and official way to do class reloading.
 
@@ -206,9 +206,80 @@ Example 3: Simple context reloading
 
 This example we will have a setup much closer to a normal application, with a simple context, a service and a model
 
-<< >>
+<< image 3_context_reloading.jpg  >>
 
 This setup is very similar to example 2 in the way it work: infinite loop and recreate the class loader plus drop all old references with each cycle. The difference is the class loader is not loading a single class, but instead a much more complex business is executed: create a context object, invoke its init method which in turn will create a full application object tree with service and model.
+
+~~~ java
+package qj.blog.classreloading.example3;
+
+import static qj.util.ReflectUtil.*;
+import qj.util.ThreadUtil;
+import qj.util.lang.DynamicClassLoader;
+
+/**
+ * Created by Quan on 31/10/2014.
+ */
+public class ContextReloading {
+	public static void main(String[] args) {
+		for (;;) {
+			Object context = createContext();
+			invokeHobbyService(context);
+			ThreadUtil.sleep(2000);
+		}
+	}
+
+	private static Object createContext() {
+		Class<?> contextClass = new DynamicClassLoader("target/classes")
+			.load("qj.blog.classreloading.example3.ContextReloading$Context");
+		Object context = newInstance(contextClass);
+		invoke("init", context);
+		return context;
+	}
+
+	private static void invokeHobbyService(Object context) {
+		Object hobbyService = getFieldValue("hobbyService", context);
+		invoke("hobby", hobbyService);
+	}
+
+	@SuppressWarnings("UnusedDeclaration")
+	public static class Context {
+		public HobbyService hobbyService = new HobbyService();
+		
+		public void init() {
+			// Init your services here
+			hobbyService.user = new User();
+		}
+	}
+	
+	public static class HobbyService {
+
+		public User user;
+		
+		public void hobby() {
+			user.hobby();
+		}
+	}
+	
+	public static class User {
+		public static void hobby() {
+//			playFootball(); // Will comment later
+			playBasketball(); // Will uncomment later
+		}
+		
+		// Will comment later
+//		public static void playFootball() {
+//			System.out.println("Play Football");
+//		}
+		
+//		Will uncomment later
+		public static void playBasketball() {
+			System.out.println("Play Basketball");
+		}
+	}
+}
+
+~~~
 
 As the number of classes and objects grow, our step of "drop old references" will also be more delicate, as this is the biggest reason why class reloading is so difficult. We will have to make sure that once the new context created all the references to the old classes and objects are dropped. This can sound a little difficult, but soon I will show you the way to deal with it elegantly.
 
@@ -322,7 +393,7 @@ In real life projects, there would be many other things you want to keep through
 
 Similar setup to Example 3, with infinite loop and creating DynamicClassLoader with each cycle, but this example will do a little differently by creating and maintaining a ConnectionPool object outside of the reloading cycles. Each time a context object is created, it will receive the reference to the persisted ConnectionPool object, and thus, they are linked together again.
 
-<< Image of persisted resources and reloading resources >>
+<< Image 4_persisting_connection.jpg >>
 
 You can see that also the Connection and Connection Pool objects are referred from our reloaded Context and Service, they totally reside in the persisted scope, and loaded by JVM's default class loader.
 
@@ -334,10 +405,39 @@ In your project, you should separate those persisted classes in a separated modu
 Example 5: The complex Web App with class reloading
 =====
 
-This example will be very similar to what a normal web application should look like. The project setup include: MySQL, Jetty Embeded Web Server, Commons Dbcp
+This example will be very similar to what a normal web application should look like. It is a Single Page Application with AngularJS, db is MySQL, and with every page refresh, yes, it will reload the classes. The project setup include: Maven, SQLite, Jetty Embedded Web Server.
 
-This is not the final solution for all the applications out there, the actual solution will vary from project to project, framework to framework. What I'm trying to show here is that it is achievable and with your knowledge of the system and the class reloading mechanism, you will be able to make it happen.
+Although you can use this example to setup class reloading for your project, this is not the final solution for all, the actual solutions will vary from project to project, framework to framework. What I'm trying to show here is that it is achievable and with your knowledge of the system and the class reloading mechanism, you will be able to make it happen.
 
+Web server and the reloading context
+------------
+
+The first thing we should care about while setting up this project is separating the web server and the reloading context:
+
+1. The web server must not be restarted during reloading cycles.
+2. The web server hold reference to servlets and filters, so persisting the web server may cost us unable to reload the servlet and filter classes.
+3. The solution is using stub servlets and filters in the web server, while real servlets and filters still reside in the reloading context. Calls to stub servlets will be delegated to real servlets at runtime.
+
+<< image 5_web_app.jpg >>
+
+With this approach, the web server together with all stub servlets and filters will be persisted and live through reloading cycles, and real servlets and filters will be reloaded with the context. With each client requests, the stub servlet will refer to the current context object in use, use reflection to retrieve the real servlet then delegate the service method call. This approach, however, will not be able to reload the mapping, which mean when you have a new servlet, and want to map it to a certain url, you will have to restart the server.
+
+Build and run
+------------
+
+This example together with all other examples' source code are hosted at [https://github.com/quanla/classreloading](https://github.com/quanla/classreloading), so please feel free to download and check them out. However, in order to build and run example 5, you will have to use Maven to resolve the dependencies (Jade4J, Servlet API, Jetty, SQLite, Gson):
+
+1. Run "mvn compile", maven will resolve the dependencies
+2. Edit file "run_example5.bat" and set "m2_repo" variable to your local m2 repository path.
+3. Execute "run_example5.bat" to run and go to http://localhost:1080 to see the application in action
+
+Build and run with IntelliJ
+--------------
+
+1. Import the project .pom file
+2. Set project's source level to 8.0
+3. Set compiler's Make project automatically to true.
+4. Change any java file ( except WebApp.java ) and see the change applied immediately.
 
 Difficulties:
 ===========

@@ -26,7 +26,7 @@ public class ReloadingWebContext extends ReloadingContext {
 		this.shouldReload = shouldReload;
 	}
 
-	public HttpServlet getServlet(final String servletName) {
+	public HttpServlet stubServlet(final String servletName) {
 		return new HttpServlet() {
 			protected void service(HttpServletRequest req,
 			                       HttpServletResponse resp) throws ServletException,

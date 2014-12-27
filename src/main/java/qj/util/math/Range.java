@@ -3,7 +3,6 @@ package qj.util.math;
 import qj.util.ObjectUtil;
 
 /**
- * TODO replaced by commons range
  */
 public class Range implements Comparable<Range> {
 	private Integer from;
