@@ -18,6 +18,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -31,7 +32,7 @@ public class WebApp {
 	public static String version = "1.0.0";
 
 	public static void main(String[] args) throws Exception {
-		Properties config = PropertiesUtil.loadPropertiesFromFile("data/example5/config.properties");
+        Properties config = PropertiesUtil.loadPropertiesFromFile("data/example5/config.properties");
 
 		startServer(config);
 	}
@@ -65,9 +66,9 @@ public class WebApp {
 				() -> ( development ?
 						// During development, the dynamic class loader will be used
 						new ExceptingClassLoader(
-							(className) -> true,
+							(className) -> className.startsWith("qj.util"),
 							"target/classes"
-						) :
+						).setParent(WebApp.class.getClassLoader()) :
 						
 						// During production, the default class loader will be used
 						WebApp.class.getClassLoader()

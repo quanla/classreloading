@@ -19,7 +19,7 @@ public class ExceptingClassLoader extends DynamicClassLoader {
 	@Override
 	protected byte[] loadNewClass(String name) {
 		if (except.e(name)) {
-			return null;
+            return null;
 		}
 
 		return super.loadNewClass(name);

@@ -19,7 +19,7 @@ public class DynamicClassLoader extends AggressiveClassLoader {
 	public DynamicClassLoader(String... paths) {
 		for (String path : paths) {
 			File file = new File(path);
-			
+
 			F1<String, byte[]> loader = loader(file);
 			if (loader == null) {
 				throw new RuntimeException("Path not exists " + path);
@@ -94,18 +94,6 @@ public class DynamicClassLoader extends AggressiveClassLoader {
 		};
 	}
 	
-
-	public InputStream getResourceAsStream(String name) {
-//		System.out.println("Loading res " + name);
-		for (F1<String, byte[]> loader : loaders) {
-			byte[] data = loader.e(name);
-			if (data!= null) {
-				return new ByteArrayInputStream(data);
-			}
-		}
-		return null;
-	}
-
 	@Override
 	protected byte[] loadNewClass(String name) {
 //		System.out.println("Loading class " + name);

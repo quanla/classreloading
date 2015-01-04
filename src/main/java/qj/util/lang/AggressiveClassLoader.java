@@ -10,8 +10,9 @@ public abstract class AggressiveClassLoader extends ClassLoader {
 
 	Set<String> loadedClasses = new HashSet<>();
 	Set<String> unavaiClasses = new HashSet<>();
-	
-	@Override
+    private ClassLoader parent = getParent();
+
+    @Override
 	public Class<?> loadClass(String name) throws ClassNotFoundException {
 		if (loadedClasses.contains(name) || unavaiClasses.contains(name)) {
 			return super.loadClass(name); // Use default CL cache
@@ -23,9 +24,14 @@ public abstract class AggressiveClassLoader extends ClassLoader {
 			return loadClass(newClassData, name);
 		} else {
 			unavaiClasses.add(name);
-			return getParent().loadClass(name);
+			return parent.loadClass(name);
 		}
 	}
+
+    public AggressiveClassLoader setParent(ClassLoader parent) {
+        this.parent = parent;
+        return this;
+    }
 	
 	/**
 	 * Handle exception
