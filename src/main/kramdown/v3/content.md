@@ -305,6 +305,10 @@ So you can see that the rules are not very restricted, except for the crossing c
 
 So the most challenging problem with Class Reloading is dealt with. In the next example, we will try to apply this technique to a simple Web Application, and enjoy the reloading Java classes just like any scripting language
 
+Example 5: KeepConnectionPool
+================
+
+
 
 
 

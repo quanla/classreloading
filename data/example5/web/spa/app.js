@@ -4,6 +4,7 @@
     /* App Module */
     angular.module("classreloading.app", [
             'ui.router',
+            'ui.bootstrap',
             'classreloading.hello'
         ])
 

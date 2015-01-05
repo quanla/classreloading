@@ -1,0 +1,12 @@
+.modal-header
+  h3.modal-title Add a new contact
+.modal-body
+  form(name="form")
+    .form-group
+      label.control-label Contact name
+      input.form-control(ng-model="contact.name",required,autofocus)
+    .form-group
+      label.control-label Phone No
+      input.form-control(ng-model="contact.phone",required)
+.modal-footer
+  button.btn.btn-default(ng-click="add()",ng-disabled="form.$invalid",style="min-width: 150px") Add

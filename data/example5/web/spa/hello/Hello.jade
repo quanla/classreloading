@@ -3,6 +3,18 @@ h1 Hello World
 .lead Here are contacts that we have in database:
 
 table.table.table-striped.table-hover
-  tr(ng-repeat="person in persons")
-    td.text-right(style="width: 20px") {{ $index + 1 }}
-    td {{ person.name }}
+  thead
+    tr
+      th #
+      th Name
+      th Phone
+
+  tbody
+    tr(ng-repeat="contact in contacts")
+      td.text-right(style="width: 20px") {{ $index + 1 }}
+      td {{ contact.name }}
+      td {{ contact.phone }}
+
+button.btn.btn-success(ng-click="showAddForm()")
+  span.glyphicon.glyphicon-plus
+  |  Add new contact

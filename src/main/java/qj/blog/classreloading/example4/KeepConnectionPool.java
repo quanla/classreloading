@@ -2,6 +2,7 @@ package qj.blog.classreloading.example4;
 
 import static qj.util.ReflectUtil.*;
 
+import qj.blog.classreloading.example4.crossing.ConnectionPool;
 import qj.util.ThreadUtil;
 import qj.util.lang.ExceptingClassLoader;
 
@@ -24,9 +25,9 @@ public class KeepConnectionPool {
 
 	private static Object createContext(ConnectionPool pool) {
 		ExceptingClassLoader classLoader = new ExceptingClassLoader(
-				(className) -> className.contains("$Connection"),
+				(className) -> className.contains(".crossing."),
 				"target/classes");
-		Class<?> contextClass = classLoader.load(KeepConnectionPool.class.getName() + "$Context");
+		Class<?> contextClass = classLoader.load("qj.blog.classreloading.example4.reloadable.Context");
 		Object context = newInstance(contextClass);
 		
 		setFieldValue(pool, "pool", context);
@@ -40,39 +41,6 @@ public class KeepConnectionPool {
 		invoke("hello", hobbyService);
 	}
 	
-	@SuppressWarnings("UnusedDeclaration")
-	public static class Context {
-		public ConnectionPool pool;
-		
-		public UserService userService = new UserService();
-		
-		public void init() {
-			userService.pool = pool;
-		}
-	}
-	
-	public static class UserService {
-		ConnectionPool pool;
-		
-		@SuppressWarnings("UnusedDeclaration")
-		public void hello() {
-			System.out.println("UserService CL: " + this.getClass().getClassLoader()); // Will output ExceptingClassLoader
-			System.out.println("Hi " + pool.getConnection().getUserName());
-		}
-	}
-	
-	public static class ConnectionPool {
-		Connection conn = new Connection();
-		
-		public Connection getConnection() {
-			return conn;
-		}
-	}
-	
-	public static class Connection {
-		public String getUserName() {
-			System.out.println("Connection CL: " + this.getClass().getClassLoader()); // Will output DefaultClassLoader
-			return "Joe";
-		}
-	}
+
+
 }

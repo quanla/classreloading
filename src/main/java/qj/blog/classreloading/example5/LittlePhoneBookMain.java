@@ -18,7 +18,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -27,7 +26,7 @@ import java.sql.Statement;
 import java.util.EnumSet;
 import java.util.Properties;
 
-public class WebApp {
+public class LittlePhoneBookMain {
 	public static boolean development = true;
 	public static String version = "1.0.0";
 
@@ -62,7 +61,7 @@ public class WebApp {
         servletContext.setContextPath("/");
 
 		ReloadingWebContext contextLoader = new ReloadingWebContext(
-				"qj.blog.classreloading.example5.Context",
+				"qj.blog.classreloading.example5.reloadable.Context",
 				() -> ( development ?
 						// During development, the dynamic class loader will be used
 						new ExceptingClassLoader(
@@ -71,7 +70,7 @@ public class WebApp {
 						) :
 						
 						// During production, the default class loader will be used
-						WebApp.class.getClassLoader()
+						LittlePhoneBookMain.class.getClassLoader()
 				),
 				development ? 
 						// During development, each time a GET to root URL "/", the dynamic context will be reloaded
@@ -95,8 +94,8 @@ public class WebApp {
 		// context each time a request is served
 		servletContext.addServlet( new ServletHolder(contextLoader.stubServlet("jade")), "/");
 
-		servletContext.addServlet( new ServletHolder(wrapServlet(contextLoader.stubServlet("person"), dbPool.closeThreadConn)), 
-				"/person");
+		servletContext.addServlet( new ServletHolder(wrapServlet(contextLoader.stubServlet("contact"), dbPool.closeThreadConn)),
+				"/contact");
 
 		servletContext.addServlet( new ServletHolder(contextLoader.stubServlet("jade")), "*.jade");
 
@@ -192,10 +191,10 @@ public class WebApp {
 		Statement statement = connection.createStatement();
 		statement.setQueryTimeout(30);  // set timeout to 30 sec.
 
-		statement.executeUpdate("drop table if exists person");
-		statement.executeUpdate("create table person (id integer, name string)");
-		statement.executeUpdate("insert into person values(1, 'leo')");
-		statement.executeUpdate("insert into person values(2, 'yui')");
+		statement.executeUpdate("drop table if exists contact");
+		statement.executeUpdate("create table contact (id integer, name string, phone string)");
+		statement.executeUpdate("insert into contact values(1, 'Andrew King', '0648 6815 1654')");
+		statement.executeUpdate("insert into contact values(2, 'William Shakespeare', '0234 5234 3264')");
 	}
 
 	private static HttpServlet wrapServlet(HttpServlet servlet, P0 closeThreadConn) {
@@ -214,7 +213,7 @@ public class WebApp {
 	
 //	public static class Build {
 //		public static void main(String[] args) {
-//			System.out.println(BuildUtil.runCommand(WebApp.class));
+//			System.out.println(BuildUtil.runCommand(LittlePhoneBookMain.class));
 //		}
 //	}
 

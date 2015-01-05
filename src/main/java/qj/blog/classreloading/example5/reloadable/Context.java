@@ -1,7 +1,7 @@
-package qj.blog.classreloading.example5;
+package qj.blog.classreloading.example5.reloadable;
 
-import qj.blog.classreloading.example5.servlet.JadeServlet;
-import qj.blog.classreloading.example5.servlet.PersonServlet;
+import qj.blog.classreloading.example5.reloadable.servlet.ContactServlet;
+import qj.blog.classreloading.example5.reloadable.servlet.JadeServlet;
 import qj.util.funct.F0;
 
 import java.sql.Connection;
@@ -13,18 +13,18 @@ public class Context {
 	public F0<Connection> connF;
 	
 	public JadeServlet jadeServlet = new JadeServlet();
-	public PersonServlet personServlet = new PersonServlet();
+	public ContactServlet contactServlet = new ContactServlet();
 
 	public void init(String webLoc) {
-		System.out.println("Initializing context.");
+//		System.out.println("Initializing context.");
 		
 		jadeServlet.version = buildVersion;
 		jadeServlet.init(webLoc);
 		
-		personServlet.connF = connF;
+		contactServlet.connF = connF;
 	}
 	
 	public void close() {
-		System.out.println("Closing context.");
+//		System.out.println("Closing context.");
 	}
 }

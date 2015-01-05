@@ -1,4 +1,4 @@
-package qj.blog.classreloading.example5.servlet;
+package qj.blog.classreloading.example5.reloadable.servlet;
 
 import de.neuland.jade4j.Jade4J;
 import de.neuland.jade4j.model.JadeModel;
