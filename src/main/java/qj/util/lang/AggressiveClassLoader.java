@@ -10,7 +10,7 @@ public abstract class AggressiveClassLoader extends ClassLoader {
 
 	Set<String> loadedClasses = new HashSet<>();
 	Set<String> unavaiClasses = new HashSet<>();
-    private ClassLoader parent = getParent();
+    private ClassLoader parent = AggressiveClassLoader.class.getClassLoader();
 
     @Override
 	public Class<?> loadClass(String name) throws ClassNotFoundException {
@@ -28,10 +28,10 @@ public abstract class AggressiveClassLoader extends ClassLoader {
 		}
 	}
 
-    public AggressiveClassLoader setParent(ClassLoader parent) {
-        this.parent = parent;
-        return this;
-    }
+//    public AggressiveClassLoader setParent(ClassLoader parent) {
+//        this.parent = parent;
+//        return this;
+//    }
 	
 	/**
 	 * Handle exception

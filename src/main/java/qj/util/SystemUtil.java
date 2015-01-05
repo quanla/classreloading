@@ -29,10 +29,6 @@ public class SystemUtil {
 		}
 	}
 
-	public static void onReturn(final P0 p0) {
-		onReturn(Fs.<String>p1(p0));
-	}
-
 	public static void onReturn(final P1<String> p1) {
 		ThreadUtil.runStrong(new P0() {
 			public void e() {

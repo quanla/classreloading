@@ -10,8 +10,5 @@ public class NameCaseUtil {
 			return (m.start() == 0 ? "" : "_") + m.group().toLowerCase();
 		}});
 	}
-	
-	public static void main(String[] args) {
-		System.out.println(camelToHyphen("receiver2names"));
-	}
+
 }

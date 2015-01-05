@@ -89,16 +89,6 @@ public class IOUtil {
     	}
     }
 	
-    public static void flush(OutputStream out) {
-        if (out != null) {
-            try {
-                out.flush();
-            } catch (IOException e) {
-                //
-            }
-        }
-    }
-	
 	/**
 	 * Will close stream
 	 * @param in

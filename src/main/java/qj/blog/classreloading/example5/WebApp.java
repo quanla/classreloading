@@ -68,7 +68,7 @@ public class WebApp {
 						new ExceptingClassLoader(
 							(className) -> className.startsWith("qj.util"),
 							"target/classes"
-						).setParent(WebApp.class.getClassLoader()) :
+						) :
 						
 						// During production, the default class loader will be used
 						WebApp.class.getClassLoader()

@@ -1,8 +1,5 @@
 package qj.util;
 
-import qj.util.funct.F1;
-
-
 /**
  * Created by QuanLA
  * Date: Apr 5, 2006

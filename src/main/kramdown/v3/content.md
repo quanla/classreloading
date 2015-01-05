@@ -282,16 +282,28 @@ From now on, we will call the objects and classes that are reloaded with every c
 
 << Image `4_persisting_connection.jpg` >>
 
-As seen from the picture, not only Context Object and UserService Object is refering to the ConnectionPool Object, but the Context and UserService classes are also refering to the ConnectionPool class. This is a very dangerous situation which often lead to confusion and failure. The ConnectionPool class must not be loaded by our `DynamicClassloader`, there must be only one `ConnectionPool` class in the memory, which is the one loaded by the default `Classloader`.
+As seen from the picture, not only the Context Object and the UserService Object is refering to the ConnectionPool Object, but the Context and UserService classes are also refering to the ConnectionPool class. This is a very dangerous situation which often lead to confusion and failure. The ConnectionPool class must not be loaded by our `DynamicClassloader`, there must be only one `ConnectionPool` class in the memory, which is the one loaded by the default `Classloader`.
 
 What if our `DynamicClassloader` accidentally load the `ConnectionPool` class? Then the `ConnectionPool` object from the persisted space can not be passed to the Context object, because the Context object is expecting an object of a different class, which named `ConnectionPool` too, but is actually a different class.
 
-So how do we prevent our `DynamicClassloader` from loading the `ConnectionPool` class?
+So how do we prevent our `DynamicClassloader` from loading the `ConnectionPool` class? Instead of using `DynamicClassloader`, this example use a subclass of it named: `ExceptingClassLoader`, which will pass the loading to super classloader base on a condition function:
 
+~~~ java
+(className) -> className.contains("$Connection")
+~~~
 
+If we don't use `ExceptingClassLoader` here, then the `DynamicClassloader` would load the `ConnectionPool` class because that class reside in the "`target/classes`" folder. Another way to prevent the `ConnectionPool` class to be picked up by our `DynamicClassloader` is to compile the `ConnectionPool` class to a different folder, maybe put to a different module and it will be compiled separately.
 
+#### Rules for choosing space
 
+Now, the job gets really confusing, how to determine which classes would be in Persisted space, and which classes in Reloadable space. Here are the rules:
 
+- 1 class can serve in either or both Persisted space and Reloadable space if objects of its type are not sent across the 2 spaces. For example: utility classes with all static methods like `StringUtils`
+- 1 class has objects sent across the 2 spaces must be in Persisted space - like the `ConnectionPool` class. All linked classes must also be in Persisted space - like the `Connection` class which is linked from `ConnectionPool`.
+
+So you can see that the rules are not very restricted, except for the crossing classes that has objects transfer across the 2 spaces, all other classes can be freely used in either Persisted space or Reloadable space or both. Of course only classes in Reloadable space will enjoy being reloaded with reloading cycles.
+
+So the most challenging problem with Class Reloading is dealt with. In the next example, we will try to apply this technique to a simple Web Application, and enjoy the reloading Java classes just like any scripting language
 
 
 
