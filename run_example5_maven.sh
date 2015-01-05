@@ -1,1 +1,0 @@
-mvn exec:java -Dexec.mainClass="qj.blog.classreloading.example5.WebApp"

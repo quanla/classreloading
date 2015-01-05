@@ -1,0 +1,1 @@
+mvn exec:java -Dexec.mainClass="qj.blog.classreloading.example4.KeepConnectionPool"
