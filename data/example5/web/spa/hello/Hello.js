@@ -29,14 +29,26 @@
                     .result.then(function(contact) {
                         $scope.contacts.push(contact);
                     });
-            }
+            };
+
+            $scope.remove = function(contact) {
+                if (!confirm("Remove this contact: " + contact.name + " - " + contact.phone + "?")) {
+                    return;
+                }
+
+                ContactService.remove(contact).success(function() {
+                    $scope.contacts.splice($scope.contacts.indexOf(contact), 1);
+                });
+            };
+
         })
 
         .controller("classreloading.hello.AddContactModalCtrl", function($scope, ContactService, $modalInstance) {
             $scope.contact = {};
             $scope.add = function() {
-                ContactService.add($scope.contact);
-                $modalInstance.close($scope.contact);
+                ContactService.add($scope.contact).success(function(contact1) {
+                    $modalInstance.close(contact1);
+                });
             };
         })
 
@@ -48,6 +60,9 @@
                 },
                 add : function(contact) {
                     return $http.post("/contact?action=add", contact);
+                },
+                remove : function(contact) {
+                    return $http.post("/contact?action=remove&id=" + contact.id, contact);
                 }
             };
         })

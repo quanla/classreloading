@@ -192,7 +192,7 @@ public class LittlePhoneBookMain {
 		statement.setQueryTimeout(30);  // set timeout to 30 sec.
 
 		statement.executeUpdate("drop table if exists contact");
-		statement.executeUpdate("create table contact (id integer, name string, phone string)");
+		statement.executeUpdate("create table contact (id integer PRIMARY KEY AUTOINCREMENT, name string, phone string)");
 		statement.executeUpdate("insert into contact values(1, 'Andrew King', '0648 6815 1654')");
 		statement.executeUpdate("insert into contact values(2, 'William Shakespeare', '0234 5234 3264')");
 	}

@@ -30,6 +30,9 @@ public class ContactServlet extends HttpServlet {
             case "add":
                 add(req, resp);
                 break;
+            case "remove":
+                remove(req, resp);
+                break;
 
         }
 	}
@@ -43,9 +46,15 @@ public class ContactServlet extends HttpServlet {
         Gson gson = new Gson();
         Contact contact = gson.fromJson(req.getReader(), Contact.class);
 
-        System.out.println("contact.name=" + contact.name);
-        System.out.println("contact.phone=" + contact.phone);
         ContactDAO.insert(contact, connF.e());
+
+        gson.toJson(contact, resp.getWriter());
+    }
+
+    private void remove(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        Long id = Long.valueOf(req.getParameter("id"));
+
+        ContactDAO.delete(id, connF.e());
 
         resp.getWriter().write(0);
     }

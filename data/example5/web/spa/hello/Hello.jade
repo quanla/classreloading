@@ -5,15 +5,21 @@ h1 Hello World
 table.table.table-striped.table-hover
   thead
     tr
-      th #
+      th(style="width: 15px") #
       th Name
       th Phone
+      th
 
   tbody
+    tr(ng-if="!contacts.length")
+      td.text-center.text-muted(colspan="4") No record(s)
     tr(ng-repeat="contact in contacts")
       td.text-right(style="width: 20px") {{ $index + 1 }}
       td {{ contact.name }}
       td {{ contact.phone }}
+      td.text-right
+        a.text-danger(href="",ng-click="remove(contact)")
+          span.glyphicon.glyphicon-remove
 
 button.btn.btn-success(ng-click="showAddForm()")
   span.glyphicon.glyphicon-plus

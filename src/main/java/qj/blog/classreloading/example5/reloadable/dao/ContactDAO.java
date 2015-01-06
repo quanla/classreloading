@@ -21,4 +21,8 @@ public class ContactDAO {
     public static void insert(Contact contact, Connection conn) {
         template.insert(contact, conn);
     }
+
+    public static void delete(Long id, Connection conn) {
+        template.deleteById(id, conn);
+    }
 }
