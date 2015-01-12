@@ -20,16 +20,16 @@ public class ReloadingContinuously {
 	@SuppressWarnings("UnusedDeclaration")
 	public static class User {
 		public static void hobby() {
-			playFootball(); // Will comment later
-//			playBasketball(); // Will uncomment later
+			playFootball(); // Will comment during runtime
+//			playBasketball(); // Will uncomment during runtime
 		}
 		
-		// Will comment later
+		// Will comment during runtime
 		public static void playFootball() {
 			System.out.println("Play Football");
 		}
 		
-		// Will uncomment later
+		// Will uncomment during runtime
 //		public static void playBasketball() {
 //			System.out.println("Play Basketball");
 //		}
