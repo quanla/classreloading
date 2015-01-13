@@ -338,7 +338,10 @@ If we don't use `ExceptingClassLoader` here, then the `DynamicClassLoader` would
 Now, the job gets really confusing. How do we determine which classes should be in the persisted space, and which classes in the reloadable space? Here are the rules:
 
 <<TODO: CONFIRM MY EDITS HERE ARE CORRECT AND FIX ANY MISTAKES:>>
+@NM: I would use my version
 <<TODO: CLARIFY WHAT IT MEANS FOR AN OBJECT TO BE SENT ACROSS THE TWO SPACES. DON'T YOU MEAN THAT IT HAS *REFERENCES* THAT GO ACROSS THE TWO SPACES?>>
+@NM: Yes, it means that it has references that go across the two spaces. Actually, there would never be any reference from persisted space to reloading space except the only one in main thread and using Reflection (which mean the actual class in Reloading space is not loaded into Persisted space). The crossing here is only for references from Reloading space going back to Persisted space. (should we use Persisting space here? sound better than Persisted space.)
+
 1. A class that has objects sent across the two spaces *must* be in the persisted space - like the `ConnectionPool` class. All linked classes must also be in the persisted space - like the `Connection` class which is linked from `ConnectionPool`.
 2. A class can serve in either or both the persisted space and the reloadable space if objects of its type are not sent across the two spaces. For example: utility classes with all static methods like `StringUtils`.
 
@@ -384,6 +387,7 @@ Because it's very important to understand how we isolate the persisted space and
 ## Summary
 
 <<TODO: REVIEW THIS CONCLUSION.>>
+@NM: Superb! Wish I can be as good a writer as you one day.
 We have seen how to reload a single class, reload a single class continuously, reload an entire space of multiple classes, and reload multiple classes separately from classes that must be persisted. With these tools, the key factor to achieve reliable class reloading is to have a super clean design. Then you can freely manipulate your classes and the whole JVM.
 
 Implementing class reloading is not the easiest thing in the world. But if you give it a shot, and at some point find your classes being loaded on the fly, then you are almost there already. There will be very little left to do before you can achieve totally superb clean design for your system.
